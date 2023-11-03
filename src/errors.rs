@@ -14,4 +14,11 @@ pub enum LibPcapError {
     },
     #[error("open mode error")]
     OpenModeError,
+    #[error("invalid interface: {iface:?} - {msg:?}")]
+    InvalidInterface {
+        iface: String,
+        msg: String,
+    },
+    #[error("invalid bpf filter")]
+    InvalidBpfFilter,
 }

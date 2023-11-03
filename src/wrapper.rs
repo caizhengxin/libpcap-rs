@@ -5,9 +5,9 @@ use std::ffi::CString;
 use std::path::{Path, PathBuf};
 use jkcenum::JkcEnum;
 use crate::errors::LibPcapError;
-use crate::libpcap::{pcap_t, pcap_pkthdr, pcap_dumper_t,
+use crate::libpcap::{pcap_t, pcap_pkthdr, pcap_dumper_t, bpf_program,
     pcap_open_offline, pcap_dump_open, pcap_open_dead, pcap_dump_open_append,
-    pcap_next, pcap_close, pcap_dump, pcap_dump_close
+    pcap_next, pcap_close, pcap_dump, pcap_dump_close, pcap_dump_flush, pcap_compile, pcap_setfilter, pcap_freecode,
 };
 
 
@@ -15,7 +15,6 @@ use crate::libpcap::{pcap_t, pcap_pkthdr, pcap_dumper_t,
 pub struct LibPcap<'a> {
     // pub path: &'a str,
     // pub filter: Option<&'a str>,
-    mode: LibPcapMode,
     in_pcap_iter: LibPcapIterator<'a>,
     out_pcap: *mut pcap_dumper_t,
 }
@@ -57,10 +56,38 @@ pub fn join_home<'a>(path: &'a str) -> PathBuf {
 }
 
 
+pub fn libpcap_set_filter<'a>(handle: *mut pcap_t, bpf_filter: &'a str) -> Result<(), LibPcapError> {
+    let fp: std::mem::MaybeUninit<bpf_program> = std::mem::MaybeUninit::uninit();
+    let mut fp = unsafe { fp.assume_init() };
+
+    let bpf_filter = CString::new(bpf_filter).unwrap_or_default();
+
+    let ret = unsafe { pcap_compile(handle, &mut fp, bpf_filter.as_ptr() as *const i8, 1, 0) };
+
+    if ret == -1 {
+        return Err(LibPcapError::InvalidBpfFilter);
+    }
+
+    let ret = unsafe { pcap_setfilter(handle, &mut fp) };
+
+    if ret == -1 {
+        unsafe { pcap_freecode(&mut fp) };
+        return Err(LibPcapError::InvalidBpfFilter);
+    }
+
+    unsafe { pcap_freecode(&mut fp) };
+
+    Ok(())
+}
+
+
 impl<'a> Drop for LibPcap<'a> {
     fn drop(&mut self) {
         if !self.out_pcap.is_null() {
-            unsafe { pcap_dump_close(self.out_pcap); }
+            unsafe {
+                pcap_dump_flush(self.out_pcap);
+                pcap_dump_close(self.out_pcap);
+            }
         }
     }
 }
@@ -68,7 +95,7 @@ impl<'a> Drop for LibPcap<'a> {
 
 impl<'a> LibPcap<'a> {
     pub fn open(path: &'a str, mode: &'a str) -> Result<Self, LibPcapError> {
-        let mut errbuf = [0; 65535];
+        let mut errbuf = [0; 256];
         let pathobj = join_home(path);
         let mut mode_tmp = LibPcapMode::Read;
 
@@ -121,7 +148,6 @@ impl<'a> LibPcap<'a> {
         Ok(Self {
             // path,
             // filter: None,
-            mode: mode_tmp,
             in_pcap_iter: LibPcapIterator { in_pcap, _mark: &[] },
             out_pcap,
         })

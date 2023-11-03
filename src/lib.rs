@@ -7,5 +7,11 @@
 pub mod libpcap;
 pub mod wrapper;
 pub mod errors;
+pub mod sniff;
+pub mod traits;
 
+use errors::LibPcapError;
 pub use wrapper::LibPcap;
+pub use sniff::Sniff;
+
+pub type PResult<I> = Result<I, LibPcapError>;
