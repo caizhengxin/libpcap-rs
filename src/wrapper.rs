@@ -1,20 +1,17 @@
 use std::ptr::null_mut;
 use std::str::FromStr;
-use std::time::SystemTime;
 use std::ffi::CString;
 use std::path::{Path, PathBuf};
 use jkcenum::JkcEnum;
 use crate::errors::LibPcapError;
+use crate::time::now_timestamp;
 use crate::libpcap::{pcap_t, pcap_pkthdr, pcap_dumper_t, bpf_program,
     pcap_open_offline, pcap_dump_open, pcap_open_dead, pcap_dump_open_append,
     pcap_next, pcap_close, pcap_dump, pcap_dump_close, pcap_dump_flush, pcap_compile, pcap_setfilter, pcap_freecode,
 };
 
 
-#[derive(Debug)]
 pub struct LibPcap<'a> {
-    // pub path: &'a str,
-    // pub filter: Option<&'a str>,
     in_pcap_iter: LibPcapIterator<'a>,
     out_pcap: *mut pcap_dumper_t,
 }
@@ -146,11 +143,15 @@ impl<'a> LibPcap<'a> {
         };
 
         Ok(Self {
-            // path,
-            // filter: None,
             in_pcap_iter: LibPcapIterator { in_pcap, _mark: &[] },
             out_pcap,
         })
+    }
+
+    pub fn with_filter(&self, value: &'a str) -> Result<&Self, LibPcapError> {
+        libpcap_set_filter(self.in_pcap_iter.in_pcap, value)?;
+
+        Ok(&self)
     }
 
     pub fn read(&self) -> &LibPcapIterator<'a> {
@@ -164,7 +165,7 @@ impl<'a> LibPcap<'a> {
     
             pkt_header.caplen = buf.len() as u32;
             pkt_header.len = pkt_header.caplen;
-            let timestamp = SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
+            let timestamp = now_timestamp() as i64;
             pkt_header.ts.tv_sec = timestamp as i64;
             
             unsafe { pcap_dump(self.out_pcap as *mut u8, &pkt_header, buf.as_ptr()); };    

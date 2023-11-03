@@ -9,6 +9,7 @@ pub mod wrapper;
 pub mod errors;
 pub mod sniff;
 pub mod traits;
+pub(crate) mod time;
 
 use errors::LibPcapError;
 pub use wrapper::LibPcap;

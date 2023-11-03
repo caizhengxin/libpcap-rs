@@ -6,6 +6,7 @@ use crate::libpcap::{
     pcap_set_rfmon, pcap_set_tstamp_precision, pcap_set_tstamp_type, pcap_close,
     pcap_next
 };
+use crate::time::now_timestamp;
 use crate::errors::LibPcapError;
 use crate::wrapper::libpcap_set_filter;
 use crate::wrapper::LibPcapPacketInfo;
@@ -180,7 +181,7 @@ impl<'a> Iterator for SniffIterator<'a> {
 
         if pkt.is_empty() {
             Some(Self::Item {
-                timestamp: 0,
+                timestamp: now_timestamp() as i64,
                 caplen: 0,
                 buf: &[],
             })
