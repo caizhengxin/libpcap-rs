@@ -1,16 +1,16 @@
 #[derive(Debug, thiserror::Error)]
-pub enum LibPcapError<'a> {
+pub enum LibPcapError {
     #[error("invalid file: {path:?}")]
     InvalidFile {
-        path: &'a str
+        path: String,
     },
     #[error("invalid dir: {path:?}")]
     InvalidDir {
-        path: &'a str
+        path: String,
     },
     #[error("file not extists: {path:?}")]
     FileNotExtists {
-        path: &'a str
+        path: String,
     },
     #[error("open mode error")]
     OpenModeError,
