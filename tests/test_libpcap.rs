@@ -1,5 +1,5 @@
 use std::path::Path;
-use libpcap_rs::LibPcap;
+use libpcap_rs::{LibPcap, get_first_iface, get_iface_list};
 
 
 #[test]
@@ -35,4 +35,16 @@ fn test_write_pcap() {
         Ok(f) => f.write(input),
         Err(e) => println!("[ERROR]: {e:?}"),
     }
+}
+
+
+#[test]
+fn test_get_first_iface() {
+    assert_eq!(get_first_iface().is_ok(), true);
+}
+
+
+#[test]
+fn test_get_iface_list() {
+    assert_eq!(get_iface_list().is_ok(), true);
 }

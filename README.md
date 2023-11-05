@@ -9,12 +9,18 @@ developing ...
 - [x] Read pcap file
 - [x] Write pcap file
 - [ ] Merge pcap file
-- [ ] Get first iface
-- [ ] Get iface list
+- [x] Get first iface (active)
+- [x] Get iface list (active)
 - [ ] Send raw packet
 - [x] Capture packet
 
 ## Usage
+
+> Install
+
+```bash
+$ sudo apt install libpcap-dev -yq
+```
 
 > Cargo.toml
 
@@ -98,5 +104,27 @@ fn main() -> PResult<()> {
     }
 
     Ok(())
+}
+```
+
+### Obtain the first active network port
+
+```rust
+use libpcap_rs::get_first_iface;
+
+
+fn main() {
+    println!("{:?}", get_first_iface);
+}
+```
+
+### Obtain active network port list
+
+```rust
+use libpcap_rs::get_iface_list;
+
+
+fn main() {
+    println!("{:?}", get_iface_list());
 }
 ```

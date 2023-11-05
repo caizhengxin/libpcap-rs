@@ -13,7 +13,7 @@ fn _test_libpcap_sniff() -> PResult<()> {
 
 
 fn _test_libpcap_sniff2() -> PResult<()> {
-    let sniff = Sniff::open("lo")?;
+    let sniff = Sniff::open("los")?;
 
     for pkt in sniff.capture(1) {
         println!("{pkt:?}");
@@ -27,5 +27,5 @@ fn _test_libpcap_sniff2() -> PResult<()> {
 fn test_libpcap_sniff() {
     assert_eq!(_test_libpcap_sniff().is_ok(), true);
 
-    let _ = _test_libpcap_sniff2();
+    println!("{:?}", _test_libpcap_sniff2());
 }

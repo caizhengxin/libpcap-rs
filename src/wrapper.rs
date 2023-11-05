@@ -1,13 +1,18 @@
 use std::ptr::null_mut;
 use std::str::FromStr;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
 use std::path::{Path, PathBuf};
 use jkcenum::JkcEnum;
+use crate::PResult;
 use crate::errors::LibPcapError;
 use crate::time::now_timestamp;
-use crate::libpcap::{pcap_t, pcap_pkthdr, pcap_dumper_t, bpf_program,
+use crate::make_cstr;
+use crate::libpcap::{
+    pcap_t, pcap_pkthdr, pcap_dumper_t, bpf_program,
     pcap_open_offline, pcap_dump_open, pcap_open_dead, pcap_dump_open_append,
     pcap_next, pcap_close, pcap_dump, pcap_dump_close, pcap_dump_flush, pcap_compile, pcap_setfilter, pcap_freecode,
+    pcap_lookupdev,
+    PCAP_ERRBUF_SIZE, pcap_findalldevs, pcap_freealldevs,
 };
 
 
@@ -92,7 +97,7 @@ impl<'a> Drop for LibPcap<'a> {
 
 impl<'a> LibPcap<'a> {
     pub fn open(path: &'a str, mode: &'a str) -> Result<Self, LibPcapError> {
-        let mut errbuf = [0; 256];
+        let mut errbuf = [0; PCAP_ERRBUF_SIZE as usize];
         let pathobj = join_home(path);
         let mut mode_tmp = LibPcapMode::Read;
 
@@ -212,3 +217,77 @@ impl<'a> Drop for LibPcapIterator<'a> {
         }
     }
 } 
+
+
+/// Obtain the first active network port
+/// 
+/// # Returns:
+/// 
+/// - `PResult<String>`
+/// 
+/// # Examples:
+/// 
+/// ```rust
+/// use libpcap_rs::get_first_iface;
+/// 
+/// println!("{:?}", get_first_iface())
+/// ```
+/// 
+pub fn get_first_iface() -> PResult<String> {
+    let mut errbuf = [0; PCAP_ERRBUF_SIZE as usize];
+
+    unsafe {
+        let value = pcap_lookupdev(errbuf.as_mut_ptr());
+
+        if value.is_null() {
+            Err(LibPcapError::LookUpDevError {
+                msg: CStr::from_ptr(errbuf.as_ptr()).to_string_lossy().to_string(),
+            })
+        }
+        else {
+            Ok(CStr::from_ptr(value).to_string_lossy().to_string())
+        }
+    }
+}
+
+
+/// Obtain active network port list
+/// 
+/// # Returns:
+/// 
+/// - `PResult<Vec<String>>`
+/// 
+/// # Examples:
+/// 
+/// ```rust
+/// use libpcap_rs::get_iface_list;
+/// 
+/// println!("{:?}", get_iface_list())
+/// ```
+/// 
+pub fn get_iface_list() -> PResult<Vec<String>> {
+    let mut errbuf = [0; PCAP_ERRBUF_SIZE as usize];
+    let mut interfaces = std::mem::MaybeUninit::uninit();
+    let mut interface_list = vec![];
+
+    let ret = unsafe { pcap_findalldevs(interfaces.as_mut_ptr(), errbuf.as_mut_ptr()) };
+
+    if ret == -1 {
+        return Err(LibPcapError::FindAllDevsError {
+            msg: make_cstr!(errbuf.as_ptr()),
+        })
+    }
+
+    let interfaces = unsafe { interfaces.assume_init() };
+
+    let mut interface_temp = interfaces;
+
+    while !interface_temp.is_null() {
+        interface_list.push(make_cstr!((*interface_temp).name));
+        interface_temp = unsafe {(*interface_temp).next};
+    }
+
+    unsafe { pcap_freealldevs(interfaces) };
+
+    Ok(interface_list)
+}

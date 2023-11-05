@@ -1,3 +1,4 @@
+/// libpcap error enum
 #[derive(Debug, thiserror::Error)]
 pub enum LibPcapError {
     #[error("invalid file: {path:?}")]
@@ -21,4 +22,12 @@ pub enum LibPcapError {
     },
     #[error("invalid bpf filter")]
     InvalidBpfFilter,
+    #[error("lookupdev error: {msg:?}")]
+    LookUpDevError {
+        msg: String,
+    },
+    #[error("findalldevs error: {msg:?}")]
+    FindAllDevsError {
+        msg: String,
+    }
 }

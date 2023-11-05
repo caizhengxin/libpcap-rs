@@ -10,9 +10,11 @@ pub mod errors;
 pub mod sniff;
 pub mod traits;
 pub(crate) mod time;
+mod utils;
+mod ffi;
 
-use errors::LibPcapError;
-pub use wrapper::LibPcap;
+pub use wrapper::{LibPcap, get_first_iface, get_iface_list};
 pub use sniff::Sniff;
+pub use errors::LibPcapError;
 
 pub type PResult<I> = Result<I, LibPcapError>;
