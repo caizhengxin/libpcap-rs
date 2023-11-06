@@ -13,7 +13,7 @@ pub(crate) mod time;
 mod utils;
 mod ffi;
 
-pub use wrapper::{LibPcap, get_first_iface, get_iface_list};
+pub use wrapper::{LibPcap, get_first_iface, get_iface_list, send_packet};
 pub use sniff::Sniff;
 pub use errors::LibPcapError;
 

@@ -29,5 +29,7 @@ pub enum LibPcapError {
     #[error("findalldevs error: {msg:?}")]
     FindAllDevsError {
         msg: String,
-    }
+    },
+    #[error("send raw packet error")]
+    SendRawPacketError,
 }

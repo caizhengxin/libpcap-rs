@@ -12,7 +12,7 @@ use crate::libpcap::{
     pcap_open_offline, pcap_dump_open, pcap_open_dead, pcap_dump_open_append,
     pcap_next, pcap_close, pcap_dump, pcap_dump_close, pcap_dump_flush, pcap_compile, pcap_setfilter, pcap_freecode,
     pcap_lookupdev,
-    PCAP_ERRBUF_SIZE, pcap_findalldevs, pcap_freealldevs,
+    PCAP_ERRBUF_SIZE, pcap_findalldevs, pcap_freealldevs, pcap_open_live, pcap_sendpacket,
 };
 
 
@@ -290,4 +290,53 @@ pub fn get_iface_list() -> PResult<Vec<String>> {
     unsafe { pcap_freealldevs(interfaces) };
 
     Ok(interface_list)
+}
+
+
+/// Using network port send raw packet
+/// 
+/// # Args:
+/// 
+/// - `iface: T`: network port name
+/// - `buf: T`: send raw data
+/// 
+/// # Returns
+/// 
+/// - `PResult<()>`
+/// 
+/// # Examples:
+/// 
+/// ```rust
+/// use libpcap_rs::send_packet;
+/// 
+/// let input = b"\x00\x0c\x29\xaf\x7f\xfe\x10\x9a\xdd\x4e\x06\x0d\x08\x00\x45\x00\
+///               \x00\x40\xb5\xf2\x00\x00\x40\x06\xa9\x7c\x0a\x01\x01\xea\x0a\x0a\
+///               \x05\x55\xc8\xd3\x01\xf6\xe0\x76\x90\x16\xc4\x44\x9b\x5a\x80\x18\
+///               \xff\xff\x6c\x1c\x00\x00\x01\x01\x08\x0a\x37\xc4\x50\xe2\x00\xba\
+///               \x7c\x1c\x4d\x6e\x00\x00\x00\x06\xff\x03\x01\xf4\x00\x64";
+/// send_packet("lo", input);
+/// ```
+/// 
+pub fn send_packet<T: Into<Vec<u8>> + std::marker::Copy>(iface: T, buf: &[u8]) -> PResult<()> {
+    let mut errbuf = [0; PCAP_ERRBUF_SIZE as usize];
+    let iface = CString::new(iface).unwrap_or_default();
+
+    let handle = unsafe { pcap_open_live(iface.as_ptr(), 65535, 0, 0, errbuf.as_mut_ptr()) };
+
+    if handle.is_null() {
+        return Err(LibPcapError::InvalidInterface {
+            iface: make_cstr!(iface.as_ptr()),
+            msg: make_cstr!(errbuf.as_ptr()),
+        });
+    }
+
+    let ret = unsafe { pcap_sendpacket(handle, buf.as_ptr(), buf.len() as i32) };
+
+    if ret == -1 {
+        return Err(LibPcapError::SendRawPacketError);
+    }
+
+    unsafe { pcap_close(handle) };
+
+    Ok(())
 }
