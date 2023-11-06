@@ -11,7 +11,7 @@ developing ...
 - [ ] Merge pcap file
 - [x] Get first iface (active)
 - [x] Get iface list (active)
-- [ ] Send raw packet
+- [x] Send raw packet
 - [x] Capture packet
 
 ## Usage
@@ -126,5 +126,21 @@ use libpcap_rs::get_iface_list;
 
 fn main() {
     println!("{:?}", get_iface_list());
+}
+```
+
+### Using network port send raw packet
+
+```rust
+use libpcap_rs::send_packet;
+
+
+fn main() {
+    let input = b"\x00\x0c\x29\xaf\x7f\xfe\x10\x9a\xdd\x4e\x06\x0d\x08\x00\x45\x00\
+                \x00\x40\xb5\xf2\x00\x00\x40\x06\xa9\x7c\x0a\x01\x01\xea\x0a\x0a\
+                \x05\x55\xc8\xd3\x01\xf6\xe0\x76\x90\x16\xc4\x44\x9b\x5a\x80\x18\
+                \xff\xff\x6c\x1c\x00\x00\x01\x01\x08\x0a\x37\xc4\x50\xe2\x00\xba\
+                \x7c\x1c\x4d\x6e\x00\x00\x00\x06\xff\x03\x01\xf4\x00\x64";
+    send_packet("lo", input);
 }
 ```
