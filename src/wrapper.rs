@@ -9,10 +9,10 @@ use crate::time::now_timestamp;
 use crate::make_cstr;
 use crate::libpcap::{
     pcap_t, pcap_pkthdr, pcap_dumper_t, bpf_program,
+    PCAP_ERRBUF_SIZE,
     pcap_open_offline, pcap_dump_open, pcap_open_dead, pcap_dump_open_append,
     pcap_next, pcap_close, pcap_dump, pcap_dump_close, pcap_dump_flush, pcap_compile, pcap_setfilter, pcap_freecode,
-    pcap_lookupdev,
-    PCAP_ERRBUF_SIZE, pcap_findalldevs, pcap_freealldevs, pcap_open_live, pcap_sendpacket,
+    pcap_lookupdev, pcap_findalldevs, pcap_freealldevs, pcap_open_live, pcap_sendpacket,
 };
 
 
@@ -58,6 +58,17 @@ pub fn join_home<'a>(path: &'a str) -> PathBuf {
 }
 
 
+/// Set bpf filter
+/// 
+/// # Args:
+/// 
+/// - `handle`
+/// - `bpf_filter`
+/// 
+/// # Returns:
+/// 
+/// - `Result<(), LibPcapError>`
+/// 
 pub fn libpcap_set_filter<'a>(handle: *mut pcap_t, bpf_filter: &'a str) -> Result<(), LibPcapError> {
     let fp: std::mem::MaybeUninit<bpf_program> = std::mem::MaybeUninit::uninit();
     let mut fp = unsafe { fp.assume_init() };
@@ -236,17 +247,15 @@ impl<'a> Drop for LibPcapIterator<'a> {
 pub fn get_first_iface() -> PResult<String> {
     let mut errbuf = [0; PCAP_ERRBUF_SIZE as usize];
 
-    unsafe {
-        let value = pcap_lookupdev(errbuf.as_mut_ptr());
+    let value = unsafe { pcap_lookupdev(errbuf.as_mut_ptr()) };
 
-        if value.is_null() {
-            Err(LibPcapError::LookUpDevError {
-                msg: CStr::from_ptr(errbuf.as_ptr()).to_string_lossy().to_string(),
-            })
-        }
-        else {
-            Ok(CStr::from_ptr(value).to_string_lossy().to_string())
-        }
+    if value.is_null() {
+        Err(LibPcapError::LookUpDevError {
+            msg: make_cstr!(errbuf.as_ptr()),
+        })
+    }
+    else {
+        Ok(make_cstr!(value))
     }
 }
 
@@ -317,7 +326,7 @@ pub fn get_iface_list() -> PResult<Vec<String>> {
 /// send_packet("lo", input);
 /// ```
 /// 
-pub fn send_packet<T: Into<Vec<u8>> + std::marker::Copy>(iface: T, buf: &[u8]) -> PResult<()> {
+pub fn send_packet<T: Into<Vec<u8>>>(iface: T, buf: &[u8]) -> PResult<()> {
     let mut errbuf = [0; PCAP_ERRBUF_SIZE as usize];
     let iface = CString::new(iface).unwrap_or_default();
 
