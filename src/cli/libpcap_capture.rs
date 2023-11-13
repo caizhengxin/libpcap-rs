@@ -39,9 +39,9 @@ fn sniff_pcap(args: &Cli) -> PResult<()> {
         None
     };
 
-    let sniff = Sniff::open(&args.iface)?;
+    let sniff = Sniff::open(args.iface.clone())?;
     let sniff = sniff.with_promisc(if args.promisc {1} else {0})
-        .with_filter(&bpf_filter)?;
+        .with_filter(bpf_filter)?;
 
     for pkt in sniff.capture(args.count) {
         if args.view {

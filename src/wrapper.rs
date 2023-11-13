@@ -63,7 +63,7 @@ pub fn join_home<'a>(path: &'a str) -> PathBuf {
 /// 
 /// - `Result<(), LibPcapError>`
 /// 
-pub fn libpcap_set_filter<'a>(handle: *mut pcap_t, bpf_filter: &'a str) -> Result<(), LibPcapError> {
+pub fn libpcap_set_filter<T: Into<Vec<u8>>>(handle: *mut pcap_t, bpf_filter: T) -> Result<(), LibPcapError> {
     let fp: std::mem::MaybeUninit<bpf_program> = std::mem::MaybeUninit::uninit();
     let mut fp = unsafe { fp.assume_init() };
 

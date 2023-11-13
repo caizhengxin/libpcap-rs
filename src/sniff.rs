@@ -1,4 +1,6 @@
 use std::ffi::{CString, CStr};
+use std::marker::PhantomData;
+use crate::PResult;
 use crate::libpcap::{
     pcap_t, pcap_create, pcap_activate, pcap_geterr,
     pcap_set_snaplen, pcap_set_promisc, pcap_set_timeout,
@@ -8,13 +10,13 @@ use crate::libpcap::{
 };
 use crate::time::now_timestamp;
 use crate::errors::LibPcapError;
-use crate::wrapper::libpcap_set_filter;
+use crate::wrapper::{libpcap_set_filter, get_first_iface};
 use crate::wrapper::LibPcapPacketInfo;
 
 
 #[derive(Debug)]
-pub struct Sniff<'a> {
-    pub iface: &'a str,
+pub struct Sniff {
+    pub iface: String,
     handle: *mut pcap_t,
 }
 
@@ -26,8 +28,16 @@ fn get_pcap_error(handle: *mut pcap_t) -> String {
 }
 
 
-impl<'a> Sniff<'a> {
-    pub fn open(iface: &'a str) -> Result<Self, LibPcapError> {
+impl Sniff {
+    /// Open capture device
+    /// 
+    /// # Args:
+    /// 
+    /// - `iface`: Network port name.
+    pub fn open<T>(iface: T) -> Result<Self, LibPcapError>
+    where
+        T: Into<Vec<u8>>,
+    {
         let mut errbuf = String::new();
         let iface_cstring = CString::new(iface).unwrap_or_default();
 
@@ -35,7 +45,7 @@ impl<'a> Sniff<'a> {
 
         if handle.is_null() {
             return Err(LibPcapError::InvalidInterface {
-                iface: iface.to_string(),
+                iface: iface_cstring.to_string_lossy().to_string(),
                 msg: errbuf,
             });
         }
@@ -51,84 +61,114 @@ impl<'a> Sniff<'a> {
 
         if activate != 0 {
             return Err(LibPcapError::InvalidInterface {
-                iface: iface.to_string(),
+                iface: iface_cstring.to_string_lossy().to_string(),
                 msg: get_pcap_error(handle),
             });
         }
 
         Ok(Self {
-            iface,
+            iface: iface_cstring.to_string_lossy().to_string(),
             handle,
         })
     }
 
+    /// Find the active network port and open the device
+    pub fn lookup(&self) -> PResult<Self> {
+        let iface = get_first_iface()?;
+
+        Self::open(iface)
+    }
+
+    /// Set snaplen
     pub fn with_snaplen(&self, snaplen: i32) -> &Self {
         unsafe { pcap_set_snaplen(self.handle, snaplen) };
 
         &self
     }
 
-    pub fn with_filter(&self, value: &'a str) -> Result<&Self, LibPcapError> {
+    /// Set bpf filter
+    pub fn with_filter<T>(&self, value: T) -> Result<&Self, LibPcapError>
+    where
+        T: Into<Vec<u8>>,
+    {
         libpcap_set_filter(self.handle, value)?;
 
         Ok(&self)
     }
 
+    /// Set promiscuous
     pub fn with_promisc(&self, value: i32) -> &Self {
         unsafe { pcap_set_promisc(self.handle, value) };
 
         &self
     }
 
+    /// Set timeout
     pub fn with_timeout(&self, value: i32) -> &Self {
         unsafe { pcap_set_timeout(self.handle, value) };
 
         &self
     }
 
+    /// Set immediate mode
     pub fn with_immediate_mode(&self, value: i32) -> &Self {
         unsafe { pcap_set_immediate_mode(self.handle, value) };
 
         &self
     }
 
+    /// Set buffer size
     pub fn with_buffer_size(&self, value: i32) -> &Self {
         unsafe { pcap_set_buffer_size(self.handle, value) };
 
         &self
     }
 
+    /// Set data link
     pub fn with_datalink(&self, value: i32) -> &Self {
         unsafe { pcap_set_datalink(self.handle, value) };
 
         &self
     }
 
+    /// Set rfmon
     pub fn with_rfmon(&self, value: i32) -> &Self {
         unsafe { pcap_set_rfmon(self.handle, value) };
 
         &self
     }
 
+    /// Set timestamp precision
     pub fn with_tstamp_precision(&self, value: i32) -> &Self {
         unsafe { pcap_set_tstamp_precision(self.handle, value) };
 
         &self
     }
 
+    /// Set timestamp type
     pub fn with_tstamp_type(&self, value: i32) -> &Self {
         unsafe { pcap_set_tstamp_type(self.handle, value) };
 
         &self
     }
 
+    /// Capture data packet
+    /// 
+    /// # Args:
+    /// 
+    /// - `count`: Number of captured packets.
+    /// 
+    /// # Returns:
+    /// 
+    /// - `SniffIterator`
+    /// 
     pub fn capture(&self, count: isize) -> SniffIterator {
         SniffIterator::new(self.handle, count)
     }
 }
 
 
-impl<'a> Drop for Sniff<'a> {
+impl Drop for Sniff {
     fn drop(&mut self) {
         if !self.handle.is_null() {
             unsafe { pcap_close(self.handle) };
@@ -137,21 +177,33 @@ impl<'a> Drop for Sniff<'a> {
 }
 
 
+/// Capture the packet iterator
 pub struct SniffIterator<'a> {
     handle: *mut pcap_t,
     count: isize,
     index: isize,
-    _mark: Option<&'a [u8]>,
+    _mark: PhantomData<&'a u8>,
 }
 
 
 impl<'a> SniffIterator<'a> {
+    /// Initializes the iterator
+    /// 
+    /// # Args:
+    /// 
+    /// - `handle`: `pcap_create` handle.
+    /// - `count`: Capture the packet count.
+    /// 
+    /// # Returns:
+    /// 
+    /// - `SniffIterator`
+    /// 
     pub fn new(handle: *mut pcap_t, count: isize) -> Self {
         Self {
             handle,
             count,
             index: 0,
-            _mark: None,
+            _mark: PhantomData,
         }
     }
 }
