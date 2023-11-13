@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::ptr::null_mut;
 use std::str::FromStr;
 use std::ffi::{CString, CStr};
@@ -16,8 +17,8 @@ use crate::libpcap::{
 };
 
 
-pub struct LibPcap<'a> {
-    in_pcap_iter: LibPcapIterator<'a>,
+pub struct LibPcap {
+    in_pcap: *mut pcap_t,
     out_pcap: *mut pcap_dumper_t,
 }
 
@@ -31,13 +32,6 @@ pub enum LibPcapMode {
     Write,
     #[jenum(rename="a")]
     Append,
-}
-
-
-#[derive(Debug)]
-pub struct LibPcapIterator<'a> {
-    in_pcap: *mut pcap_t,
-    _mark: &'a [u8]
 }
 
 
@@ -94,7 +88,7 @@ pub fn libpcap_set_filter<'a>(handle: *mut pcap_t, bpf_filter: &'a str) -> Resul
 }
 
 
-impl<'a> Drop for LibPcap<'a> {
+impl Drop for LibPcap {
     fn drop(&mut self) {
         if !self.out_pcap.is_null() {
             unsafe {
@@ -102,11 +96,17 @@ impl<'a> Drop for LibPcap<'a> {
                 pcap_dump_close(self.out_pcap);
             }
         }
+
+        if !self.in_pcap.is_null() {
+            unsafe {
+                pcap_close(self.in_pcap);
+            }
+        }
     }
 }
 
 
-impl<'a> LibPcap<'a> {
+impl<'a> LibPcap {
     pub fn open(path: &'a str, mode: &'a str) -> Result<Self, LibPcapError> {
         let mut errbuf = [0; PCAP_ERRBUF_SIZE as usize];
         let pathobj = join_home(path);
@@ -159,38 +159,110 @@ impl<'a> LibPcap<'a> {
         };
 
         Ok(Self {
-            in_pcap_iter: LibPcapIterator { in_pcap, _mark: &[] },
+            in_pcap,
             out_pcap,
         })
     }
 
     pub fn with_filter(&self, value: &'a str) -> Result<&Self, LibPcapError> {
-        libpcap_set_filter(self.in_pcap_iter.in_pcap, value)?;
+        libpcap_set_filter(self.in_pcap, value)?;
 
         Ok(&self)
     }
 
-    pub fn read(&self) -> &LibPcapIterator<'a> {
-        &self.in_pcap_iter
+    pub fn read(&self) -> LibPcapIterator<'a> {
+        LibPcapIterator::new(self.in_pcap)
     }
 
-    pub fn write(&self, buf: &[u8]) {
+    /// Write to a pcap file with a custom timestamp
+    /// 
+    /// # Args:
+    /// 
+    /// - `buf`: Byte stream to be written
+    /// - `timestamp`: Byte stream recording time
+    /// 
+    /// # Example:
+    /// 
+    /// ```rust
+    /// use libpcap_rs::LibPcap;
+    /// 
+    /// let input = b"\x00\x0c\x29\xaf\x7f\xfe\x10\x9a\xdd\x4e\x06\x0d\x08\x00\x45\x00\
+    ///               \x00\x40\xb5\xf2\x00\x00\x40\x06\xa9\x7c\x0a\x01\x01\xea\x0a\x0a\
+    ///               \x05\x55\xc8\xd3\x01\xf6\xe0\x76\x90\x16\xc4\x44\x9b\x5a\x80\x18\
+    ///               \xff\xff\x6c\x1c\x00\x00\x01\x01\x08\x0a\x37\xc4\x50\xe2\x00\xba\
+    ///               \x7c\x1c\x4d\x6e\x00\x00\x00\x06\xff\x03\x01\xf4\x00\x64";
+    /// 
+    /// let libpcap = LibPcap::open("test.pcap", "w");
+    /// let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
+    /// 
+    /// match libpcap {
+    ///     Ok(f) => f.write_timestamp(input, timestamp as i64),
+    ///     Err(e) => println!("[ERROR]: {e:?}"),
+    /// }
+    /// ```
+    /// 
+    pub fn write_timestamp(&self, buf: &[u8], timestamp: i64) {
         if !self.out_pcap.is_null() {
             let pkt_header: std::mem::MaybeUninit<pcap_pkthdr> = std::mem::MaybeUninit::uninit();
             let mut pkt_header = unsafe { pkt_header.assume_init() };
     
             pkt_header.caplen = buf.len() as u32;
             pkt_header.len = pkt_header.caplen;
-            let timestamp = now_timestamp() as i64;
-            pkt_header.ts.tv_sec = timestamp as i64;
+            pkt_header.ts.tv_sec = timestamp;
             
             unsafe { pcap_dump(self.out_pcap as *mut u8, &pkt_header, buf.as_ptr()); };    
+        }
+    }
+
+    /// Write to a pcap file
+    /// 
+    /// # Args:
+    /// 
+    /// - `buf`: Byte stream to be written
+    /// 
+    /// # Example:
+    /// 
+    /// ```rust
+    /// use libpcap_rs::LibPcap;
+    /// 
+    /// let input = b"\x00\x0c\x29\xaf\x7f\xfe\x10\x9a\xdd\x4e\x06\x0d\x08\x00\x45\x00\
+    ///               \x00\x40\xb5\xf2\x00\x00\x40\x06\xa9\x7c\x0a\x01\x01\xea\x0a\x0a\
+    ///               \x05\x55\xc8\xd3\x01\xf6\xe0\x76\x90\x16\xc4\x44\x9b\x5a\x80\x18\
+    ///               \xff\xff\x6c\x1c\x00\x00\x01\x01\x08\x0a\x37\xc4\x50\xe2\x00\xba\
+    ///               \x7c\x1c\x4d\x6e\x00\x00\x00\x06\xff\x03\x01\xf4\x00\x64";
+    /// 
+    /// let libpcap = LibPcap::open("test.pcap", "w");
+    /// 
+    /// match libpcap {
+    ///     Ok(f) => f.write(input),
+    ///     Err(e) => println!("[ERROR]: {e:?}"),
+    /// }
+    /// ```
+    /// 
+    pub fn write(&self, buf: &[u8]) {
+        self.write_timestamp(buf, now_timestamp() as i64)
+    }
+}
+
+
+#[derive(Debug)]
+pub struct LibPcapIterator<'a> {
+    in_pcap: *mut pcap_t,
+    phantom: PhantomData<&'a [u8]>,
+}
+
+
+impl<'a> LibPcapIterator<'a> {
+    pub fn new(in_pcap: *mut pcap_t) -> Self {
+        Self {
+            in_pcap,
+            phantom: PhantomData,
         }
     }
 }
 
 
-impl<'a> Iterator for &LibPcapIterator<'a> {
+impl<'a> Iterator for LibPcapIterator<'a> {
     type Item = LibPcapPacketInfo<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -216,15 +288,6 @@ impl<'a> Iterator for &LibPcapIterator<'a> {
                 caplen: pkt_header.caplen,
                 buf: &pkt,
             })
-        }
-    }
-}
-
-
-impl<'a> Drop for LibPcapIterator<'a> {
-    fn drop(&mut self) {
-        if !self.in_pcap.is_null() {
-            unsafe { pcap_close(self.in_pcap); }
         }
     }
 } 

@@ -12,6 +12,7 @@ pub mod traits;
 pub(crate) mod time;
 mod utils;
 mod ffi;
+pub mod path;
 
 pub use wrapper::{LibPcap, get_first_iface, get_iface_list, send_packet};
 pub use sniff::Sniff;

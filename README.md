@@ -8,7 +8,7 @@ developing ...
 
 - [x] Read pcap file
 - [x] Write pcap file
-- [ ] Merge pcap file
+- [x] Merge pcap file
 - [x] Get first iface (active)
 - [x] Get iface list (active)
 - [x] Send raw packet
@@ -20,6 +20,14 @@ developing ...
 
 ```bash
 $ sudo apt install libpcap-dev -yq
+```
+
+> Command
+
+```bash
+$ cargo build --release
+
+$ ./target/release/libpcap-merge -i ~/pcap/ -o new.pcap port 80
 ```
 
 > Cargo.toml

@@ -5,9 +5,27 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "libpcap-merge"
+path = "src/cli/libpcap_merge.rs"
+
+[[bin]]
+name = "libpcap-read"
+path = "src/cli/libpcap_read.rs"
+
+[[bin]]
+name = "libpcap-write"
+path = "src/cli/libpcap_write.rs"
+
+[[bin]]
+name = "libpcap-capture"
+path = "src/cli/libpcap_capture.rs"
+
 [dependencies]
 jkcenum = { git = "https://github.com/caizhengxin/jkcenum.git", features = ["derive"] }
 thiserror = "*"
+clap = { version = "4", features = ["derive"] }
+hex = { version = "*", features = ["serde"]}
 
 [build-dependencies]
 bindgen = "*"
