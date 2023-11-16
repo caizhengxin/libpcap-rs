@@ -47,16 +47,16 @@ overflow-checks = false
 name = "libpcap-merge"
 path = "src/cli/libpcap_merge.rs"
 
-[[bin]]
-name = "libpcap-read"
-path = "src/cli/libpcap_read.rs"
+# [[bin]]
+# name = "libpcap-read"
+# path = "src/cli/libpcap_read.rs"
 
 [[bin]]
 name = "libpcap-write"
 path = "src/cli/libpcap_write.rs"
 
 [[bin]]
-name = "libpcap-capture"
+name = "libpcap-sniff"
 path = "src/cli/libpcap_capture.rs"
 
 [dependencies]
