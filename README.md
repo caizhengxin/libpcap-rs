@@ -27,7 +27,11 @@ $ sudo apt install libpcap-dev -yq
 ```bash
 $ cargo build --release
 
+# Combine multiple files into one file
 $ ./target/release/libpcap-merge -i ~/pcap/ -o new.pcap port 80
+
+# Writes to the pcap file
+$ ./target/release/libpcap-write -o test.pcap -p d4ad200073c5a8a1596edbd10800450000341b01400080065e5fc0a8000cc0a80007c4aa001a5c5c8864000000008002faf049360000020405b40103030801010402
 ```
 
 > Cargo.toml
