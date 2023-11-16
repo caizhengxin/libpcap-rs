@@ -1,6 +1,10 @@
 # libpcap-rs
 
-developing ...
+[![Crates.io](https://img.shields.io/crates/v/libpcap-rs)](https://crates.io/crates/libpcap-rs)
+[![Crates.io](https://img.shields.io/crates/d/libpcap-rs)](https://crates.io/crates/libpcap-rs)
+[![License](https://img.shields.io/crates/l/libpcap-rs)](LICENSE)
+
+Encapsulate the libpcap library using Rust.
 
 - python-libpcap: https://github.com/caizhengxin/python-libpcap
 
