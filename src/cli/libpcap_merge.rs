@@ -57,5 +57,6 @@ fn merge_pcap(args: &Cli) -> PResult<()> {
 fn main() {
     let args = Cli::parse();
 
-    let _ = merge_pcap(&args);
+    let ret = merge_pcap(&args);
+    println!("{ret:?}");
 }

@@ -45,5 +45,6 @@ fn write_pcap(args: &Cli) -> PResult<()> {
 fn main() {
     let args = Cli::parse();
 
-    let _ = write_pcap(&args);
+    let ret = write_pcap(&args);
+    println!("{ret:?}");
 }

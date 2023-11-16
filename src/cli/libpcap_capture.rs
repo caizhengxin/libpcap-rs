@@ -24,6 +24,7 @@ struct Cli {
     mode: Option<String>,
     /// BPF filter
     bpf_filter: Vec<String>,
+    #[arg(short, long)]
     /// Show capture packet
     view: bool,
 }
@@ -60,5 +61,6 @@ fn sniff_pcap(args: &Cli) -> PResult<()> {
 fn main() {
     let args = Cli::parse();
 
-    let _ = sniff_pcap(&args);
+    let ret = sniff_pcap(&args);
+    println!("{ret:?}");
 }
