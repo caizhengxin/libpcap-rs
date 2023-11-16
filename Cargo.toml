@@ -1,9 +1,47 @@
 [package]
 name = "libpcap-rs"
 version = "0.1.0"
+authors = [
+    "jankincai <jankincai12@gmail.com>",
+]
 edition = "2021"
+description = "Rust encapsulates the C language libpcap"
+repository = "https://github.com/caizhengxin/libpcap-rs"
+readme = "README.md"
+# https://crates.io/category_slugs
+categories = [
+    "api-bindings",
+    "command-line-utilities",
+]
+keywords = [
+    "pcap",
+    "pcapng",
+    "pcap-files",
+    "libpcap",
+    "libpcap-rs",
+    "pcap-analyzer",
+    "pcap-parser",
+    "libpcap-wrapper",
+    "libpcap-driver",
+]
+license-file = "LICENSE"
+rust-version = "1.73"
+include = [
+    "src/*",
+    "benches/*",
+    "examples/*",
+    "build.rs",
+    "Cargo.toml",
+    "LICENSE*",
+    "README.md",
+    "wrapper.h",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[profile.dev]
+opt-level = 1
+overflow-checks = false
 
 [[bin]]
 name = "libpcap-merge"
