@@ -16,13 +16,9 @@ categories = [
 keywords = [
     "pcap",
     "pcapng",
-    "pcap-files",
     "libpcap",
     "libpcap-rs",
-    "pcap-analyzer",
     "pcap-parser",
-    "libpcap-wrapper",
-    "libpcap-driver",
 ]
 license-file = "LICENSE"
 rust-version = "1.73"
