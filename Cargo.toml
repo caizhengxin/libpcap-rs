@@ -60,10 +60,11 @@ name = "libpcap-sniff"
 path = "src/cli/libpcap_capture.rs"
 
 [dependencies]
-jkcenum = { git = "https://github.com/caizhengxin/jkcenum.git", features = ["derive"] }
-thiserror = "*"
+# jkcenum = { git = "https://github.com/caizhengxin/jkcenum.git", version ="0.2", features = ["derive"] }
+jkcenum = { version = "0.2.0", features = ["derive"] }
+thiserror = "1"
 clap = { version = "4", features = ["derive"] }
-hex = { version = "*", features = ["serde"]}
+hex = { version = "0.4", features = ["serde"]}
 
 [build-dependencies]
-bindgen = "*"
+bindgen = "0.69.1"
