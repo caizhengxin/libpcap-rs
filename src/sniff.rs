@@ -2,16 +2,20 @@ use std::ffi::{CString, CStr};
 use std::marker::PhantomData;
 use crate::PResult;
 use crate::libpcap::{
-    pcap_t, pcap_create, pcap_activate, pcap_geterr,
+    pcap_t, pcap_stat,
+    pcap_create, pcap_activate, pcap_geterr,
     pcap_set_snaplen, pcap_set_promisc, pcap_set_timeout,
     pcap_set_immediate_mode, pcap_set_buffer_size, pcap_set_datalink,
     pcap_set_rfmon, pcap_set_tstamp_precision, pcap_set_tstamp_type, pcap_close,
-    pcap_next
+    pcap_next, pcap_stats,
 };
 use crate::time::now_timestamp;
 use crate::errors::LibPcapError;
 use crate::wrapper::{libpcap_set_filter, get_first_iface};
 use crate::wrapper::LibPcapPacketInfo;
+
+
+type PcapStat = pcap_stat;
 
 
 #[derive(Debug)]
@@ -26,6 +30,10 @@ fn get_pcap_error(handle: *mut pcap_t) -> String {
     
     String::from_utf8_lossy(slice.to_bytes()).to_string()
 }
+
+
+unsafe impl std::marker::Sync for Sniff { }
+unsafe impl std::marker::Send for Sniff { }
 
 
 impl Sniff {
@@ -164,6 +172,18 @@ impl Sniff {
     /// 
     pub fn capture(&self, count: isize) -> SniffIterator {
         SniffIterator::new(self.handle, count)
+    }
+
+    /// pcap stats
+    pub fn stats(&self) -> Option<PcapStat> {
+        let mut pcap_stat_value = std::mem::MaybeUninit::uninit();
+        if unsafe { pcap_stats(self.handle, pcap_stat_value.as_mut_ptr()) } != 0 {
+            return None;
+        }
+
+        let pcap_stat_value = unsafe { pcap_stat_value.assume_init() };
+
+        Some(pcap_stat_value)
     }
 }
 
