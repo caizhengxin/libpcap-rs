@@ -20,8 +20,8 @@ keywords = [
     "libpcap-rs",
     "pcap-parser",
 ]
-license-file = "LICENSE"
-rust-version = "1.73"
+license = "MIT OR Apache-2.0"
+rust-version = "1.56"
 include = [
     "src/*",
     "benches/*",
@@ -56,7 +56,6 @@ name = "libpcap-sniff"
 path = "src/cli/libpcap_capture.rs"
 
 [dependencies]
-# jkcenum = { git = "https://github.com/caizhengxin/jkcenum.git", version ="0.2", features = ["derive"] }
 jkcenum = { version = "0.2.0", features = ["derive"] }
 thiserror = "1"
 clap = { version = "4", features = ["derive"] }
