@@ -42,7 +42,7 @@ $ ./target/release/libpcap-write -o test.pcap -p d4ad200073c5a8a1596edbd10800450
 
 ```toml
 [dependencies]
-libpcap_rs = { git = "https://github.com/caizhengxin/libpcap-rs.git" }
+libpcap-rs = "0.1.1"
 ```
 
 ### Read pcap file
