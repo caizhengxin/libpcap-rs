@@ -44,10 +44,10 @@ impl Sniff {
     /// - `iface`: Network port name.
     pub fn open<T>(iface: T) -> Result<Self, LibPcapError>
     where
-        T: Into<Vec<u8>>,
+        T: AsRef<[u8]>,
     {
         let mut errbuf = String::new();
-        let iface_cstring = CString::new(iface).unwrap_or_default();
+        let iface_cstring = CString::new(iface.as_ref()).unwrap_or_default();
 
         let handle = unsafe { pcap_create(iface_cstring.as_ptr(), errbuf.as_mut_ptr() as *mut i8) };
 

@@ -46,9 +46,9 @@ fn sniff_pcap<'a>(args: &Cli) -> PResult<()> {
         None
     };
 
-    let sniff = Sniff::open(args.iface.clone())?;
-    sniff.with_promisc(if args.promisc {1} else {0});
-    sniff.with_filter(bpf_filter)?;
+    let sniff = Sniff::open(&args.iface)?;
+    sniff.with_promisc(if args.promisc {1} else {0})
+         .with_filter(bpf_filter)?;
     let sniff = Arc::new(sniff);
     let sniff_clone = sniff.clone();
 
