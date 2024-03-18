@@ -43,9 +43,9 @@ overflow-checks = false
 name = "libpcap-merge"
 path = "src/cli/libpcap_merge.rs"
 
-# [[bin]]
-# name = "libpcap-read"
-# path = "src/cli/libpcap_read.rs"
+[[bin]]
+name = "libpcap-read"
+path = "src/cli/libpcap_read.rs"
 
 [[bin]]
 name = "libpcap-write"
@@ -61,6 +61,7 @@ thiserror = "1"
 clap = { version = "4", features = ["derive"] }
 hex = { version = "0.4", features = ["serde"]}
 signal-hook = "0.3"
+jppe = { version = "0.6", features = ["derive"] }
 
 [build-dependencies]
 bindgen = "0.69.1"
