@@ -42,7 +42,7 @@ $ ./target/release/libpcap-write -o test.pcap -p d4ad200073c5a8a1596edbd10800450
 
 ```toml
 [dependencies]
-libpcap-rs = "0.2.0"
+libpcap-rs = "0.2.1"
 ```
 
 ### Read pcap file
