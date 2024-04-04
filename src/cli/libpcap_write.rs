@@ -1,4 +1,3 @@
-#![feature(let_chains)]
 use std::path::Path;
 use clap::Parser;
 use libpcap_rs::{LibPcap, PResult, ChecksumLayer};
@@ -39,16 +38,18 @@ fn write_pcap(args: &Cli) -> PResult<()> {
 
             let length = layer.remain.len();
 
-            if let Some(protocol) = layer.layer3.get_protocol() && let Some(checksum) = layer.checksum() {
-                let checksum_array = checksum.to_be_bytes();
+            if let Some(protocol) = layer.layer3.get_protocol() {
+                if  let Some(checksum) = layer.checksum() {
+                    let checksum_array = checksum.to_be_bytes();
     
-                if protocol == 17 {
-                    payload[14 + 20 + 6] = checksum_array[0];
-                    payload[14 + 20 + 7] = checksum_array[1];
-                }
-                else if protocol == 6 {
-                    payload[14 + 20 + 16] = checksum_array[0];
-                    payload[14 + 20 + 17] = checksum_array[1];
+                    if protocol == 17 {
+                        payload[14 + 20 + 6] = checksum_array[0];
+                        payload[14 + 20 + 7] = checksum_array[1];
+                    }
+                    else if protocol == 6 {
+                        payload[14 + 20 + 16] = checksum_array[0];
+                        payload[14 + 20 + 17] = checksum_array[1];
+                    }    
                 }
             }    
 

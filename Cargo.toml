@@ -56,12 +56,12 @@ name = "libpcap-sniff"
 path = "src/cli/libpcap_capture.rs"
 
 [dependencies]
-jkcenum = { version = "0.2.0", features = ["derive"] }
+jkcenum = { version = "0.2.1", features = ["derive"] }
 thiserror = "1"
 clap = { version = "4", features = ["derive"] }
 hex = { version = "0.4", features = ["serde"]}
 signal-hook = "0.3"
-jppe = { version = "0.6", features = ["derive"] }
+jppe = { version = "1.0.0", features = ["derive"] }
 
 [build-dependencies]
 bindgen = "0.69.1"

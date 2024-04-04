@@ -1,11 +1,6 @@
-#![allow(non_upper_case_globals)]
-#![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
-#![allow(temporary_cstring_as_ptr)]
-#![feature(let_chains)]
-#![feature(array_chunks)]
-#![feature(ip_bits)]
-
+#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
+#[allow(non_upper_case_globals)]
 pub mod libpcap;
 pub mod wrapper;
 pub mod errors;

@@ -44,8 +44,10 @@ pub struct LibPcapPacketInfo<'a> {
 
 
 pub fn join_home<'a>(path: &'a str) -> PathBuf {
-    if let Some(path) = path.strip_prefix('~') && let Ok(home_dir) = std::env::var("HOME") {
-        return Path::new(&home_dir).join(Path::new(path));
+    if let Some(path) = path.strip_prefix('~') {
+        if let Ok(home_dir) = std::env::var("HOME") {
+            return Path::new(&home_dir).join(Path::new(path));
+        }
     }
 
     Path::new(path).to_path_buf()

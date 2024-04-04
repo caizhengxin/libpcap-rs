@@ -28,23 +28,26 @@ pub struct ChecksumLayer<'a> {
 
 impl<'a> ChecksumLayer<'a> {
     pub fn checksum(&self) -> Option<u16> {
-        if let Some(src) = self.layer3.get_src_vec()
-        && let Some(dst) = self.layer3.get_dst_vec()
-        && let Some(protocol) = self.layer3.get_protocol()
-        {
-            return Some(CheckSum::new_tcp_or_udp(&src, &dst, protocol, self.remain).checksum());
+        if let Some(src) = self.layer3.get_src_vec() {
+            if let Some(dst) = self.layer3.get_dst_vec() {
+                if let Some(protocol) = self.layer3.get_protocol() {
+                    return Some(CheckSum::new_tcp_or_udp(&src, &dst, protocol, self.remain).checksum());
+                }
+            }
         }
 
         None
     }
 
     pub fn verify(&self) -> bool {
-        if let Some(src) = self.layer3.get_src_vec()
-        && let Some(dst) = self.layer3.get_dst_vec()
-        && let Some(protocol) = self.layer3.get_protocol()
-        && CheckSum::new_tcp_or_udp(&src, &dst, protocol, self.remain).verify()
-        {
-            return true;
+        if let Some(src) = self.layer3.get_src_vec() {
+            if let Some(dst) = self.layer3.get_dst_vec() {
+                if let Some(protocol) = self.layer3.get_protocol() {
+                    if CheckSum::new_tcp_or_udp(&src, &dst, protocol, self.remain).verify() {
+                        return true;
+                    }
+                }
+            }
         }
 
         false
@@ -85,14 +88,14 @@ impl<'a> Layer3<'a> {
 
     pub fn get_src_vec(&self) -> Option<Vec<u8>> {
         match self {
-            Self::Ipv4(v) => Some(v.src.to_bits().to_be_bytes().to_vec()),
+            Self::Ipv4(v) => Some(v.src.octets().to_vec()),
             _ => None,
         }
     }
 
     pub fn get_dst_vec(&self) -> Option<Vec<u8>> {
         match self {
-            Self::Ipv4(v) => Some(v.dst.to_bits().to_be_bytes().to_vec()),
+            Self::Ipv4(v) => Some(v.dst.octets().to_vec()),
             _ => None,
         }
     }
@@ -162,16 +165,18 @@ mod tests {
         let (_, value) = jppe::decode_borrow::<ChecksumLayer<'_>>(&input).unwrap();
         assert_eq!(value.verify(), false);
 
-        if let Some(protocol) = value.layer3.get_protocol() && let Some(checksum) = value.checksum() {
-            let checksum_array = checksum.to_be_bytes();
+        if let Some(protocol) = value.layer3.get_protocol() {
+            if let Some(checksum) = value.checksum() {
+                let checksum_array = checksum.to_be_bytes();
 
-            if protocol == 17 {
-                input[14 + 20 + 6] = checksum_array[0];
-                input[14 + 20 + 7] = checksum_array[1];
-            }
-            else if protocol == 6 {
-                input[14 + 20 + 16] = checksum_array[0];
-                input[14 + 20 + 17] = checksum_array[1];
+                if protocol == 17 {
+                    input[14 + 20 + 6] = checksum_array[0];
+                    input[14 + 20 + 7] = checksum_array[1];
+                }
+                else if protocol == 6 {
+                    input[14 + 20 + 16] = checksum_array[0];
+                    input[14 + 20 + 17] = checksum_array[1];
+                }    
             }
         }
 

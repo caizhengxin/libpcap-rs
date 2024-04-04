@@ -7,6 +7,15 @@ pub struct CheckSum<'a> {
 }
 
 
+// TODO  SIMD checksum
+
+
+#[inline]
+fn checksum_sum(value: &[u8]) -> u32 {
+    value.chunks(2).map(|v| ((v[0] as u16) << 8) | v[1] as u16).fold(0, |v1, v2| v1 + v2 as u32)
+}
+
+
 /// CheckSum
 impl<'a> CheckSum<'a> {
     pub fn new(input: &'a [u8]) -> Self {
@@ -40,8 +49,8 @@ impl<'a> CheckSum<'a> {
             last_input = self.input.get(8..).unwrap_or_else(|| &[]);
         }
 
-        let mut value = self.src_ip.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
-        value += self.dst_ip.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
+        let mut value = checksum_sum(self.src_ip);
+        value += checksum_sum(self.dst_ip);
         // value = (0 << 8) | protcol
         value += self.protocol as u32;
         value += self.input.len() as u32;
@@ -50,17 +59,19 @@ impl<'a> CheckSum<'a> {
 
         if length % 2 == 0 {
             // Calculates the bytes before the checksum.
-            value += first_input.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
+            value += checksum_sum(first_input);
             // Calculates the bytes after the checksum.
-            value += last_input.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
+            value += checksum_sum(last_input);
         }
-        else if let Some(v) = last_input.get(..length - 1) && let Some(v2) = last_input.last() {
-            // Calculates the bytes before the checksum.
-            value += first_input.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
-            // Calculates the bytes after the checksum.
-            value += v.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
-            // Odd，full 0
-            value += (((*v2 as u16) << 8) | 0) as u32;
+        else if let Some(v) = last_input.get(..length - 1) {
+            if let Some(v2) = last_input.last() {
+                // Calculates the bytes before the checksum.
+                value += checksum_sum(first_input);
+                // Calculates the bytes after the checksum.
+                value += checksum_sum(v);
+                // Odd，full 0
+                value += (((*v2 as u16) << 8) | 0) as u32;
+            }
         }
 
         while value >> 16 != 0 {
@@ -73,19 +84,21 @@ impl<'a> CheckSum<'a> {
     pub fn verify(&self) -> bool {
         let length = self.input.len();
 
-        let mut value = self.src_ip.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
-        value += self.dst_ip.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
+        let mut value = checksum_sum(self.src_ip);
+        value += checksum_sum(self.dst_ip);
         // value = (0 << 8) | protcol
         value += self.protocol as u32;
         value += length as u32;
 
         if length % 2 == 0 {
-            value += self.input.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
+            value += checksum_sum(self.input);
         }
-        else if let Some(v) = self.input.get(..length - 1) && let Some(v2) = self.input.last() {
-            value += v.array_chunks().map(|v: &[u8; 2]| u16::from_be_bytes(*v)).fold(0, |v1, v2| v1 + v2 as u32);
-            // Odd，full 0
-            value += (((*v2 as u16) << 8) | 0) as u32;
+        else if let Some(v) = self.input.get(..length - 1) {
+            if let Some(v2) = self.input.last() {
+                value += checksum_sum(v);
+                // Odd，full 0
+                value += (((*v2 as u16) << 8) | 0) as u32;    
+            }
         }
 
         while value >> 16 != 0 {
