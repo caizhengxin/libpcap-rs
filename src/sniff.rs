@@ -170,7 +170,7 @@ impl Sniff {
     /// 
     /// - `SniffIterator`
     /// 
-    pub fn capture(&self, count: isize) -> SniffIterator {
+    pub fn capture(&self, count: isize) -> SniffIterator<'_> {
         SniffIterator::new(self.handle, count)
     }
 
